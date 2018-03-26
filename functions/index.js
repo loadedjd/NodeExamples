@@ -5,47 +5,44 @@ const geoLib = require('geolib')
 
 admin.initializeApp(functions.config().firebase)
 
-// Take the text parameter passed to this HTTP endpoint and insert it into the
-// Realtime Database under the path /messages/:pushId/original
-exports.addMessage = functions.https.onRequest((req, res) => {
-  // Grab the text parameter.
-  const original = req.query.text;
-  // Push the new message into the Realtime Database using the Firebase Admin SDK.
-  return admin.database().ref('/messages').push({original: original}).then((snapshot) => {
-    // Redirect with 303 SEE OTHER to the URL of the pushed object in the Firebase console.
-    return res.redirect(303, snapshot.ref);
-  });
+
+exports.getAllRecords = functions.https.onRequest( (req, res) => {
+
+
+    return admin.database().ref('Records').once('value', function (snap) {
+        const records = []
+
+        snap.forEach(function (record) {
+            records.push(record)
+        })
+
+
+
+        res.send(records)
+    })
 })
 
 
+exports.getUserRecords = functions.https.onRequest((req, res) => {
+
+    return admin.database().ref('Records').once('value', function (snapshot) {
 
 
+        const usr = req.query.uid
+        var count = 0
+        console.log(usr)
+        snapshot.forEach(function (record) {
+            console.log(record.val())
+            if (record.val().User === usr) {
+                count = count + 1
+            }
+        })
 
+        res.send({usr : count})
 
-//exports.canUploadRecord = functions.database.ref('/iOS/{recordID}').onWrite((event) => {
+    })
+})
 
-
-//});
-
-
-
-
-exports.getAllRecordData = functions.https.onRequest((req, res) => {
-    return admin.database().ref('Users').on('value', function(snapshot) {
-
-        var records = []
-
-        snapshot.forEach(function (user) {
-            user.ref.child('Records').on('value', function(snapshot) {
-                snapshot.forEach(function (record) {
-                    records.push(record.toJSON())
-                })
-            })
-        });
-
-        res.send(records)
-    });
-});
 
 
 
@@ -120,27 +117,8 @@ exports.checkIfRecordIsValid = functions.database.ref('Users/{UID}/Records/{Reco
 
 })
 
-// Listens for new messages added to /messages/:pushId/original and creates an
-// uppercase version of the message to /messages/:pushId/uppercase
-exports.makeUppercase = functions.database.ref('/messages/{pushId}/original').onWrite((event) => {
-  // Grab the current value of what was written to the Realtime Database.
-  const original = event.data.val();
-  console.log('Uppercasing', event.params.pushId, original);
-  const uppercase = original.toUpperCase();
-  // You must return a Promise when performing asynchronous tasks inside a Functions such as
-  // writing to the Firebase Realtime Database.
-  // Setting an "uppercase" sibling in the Realtime Database returns a Promise.
-  return event.data.ref.parent.child('uppercase').set(uppercase);
-});
 
-exports.makeLowerCase = functions.database.ref('/messages/{pushId}/uppercase').onWrite( (event) => {
 
-    const original = event.data.val();
-    const lowerCase = original.toLowerCase();
-
-    return event.data.ref.parent.child('lowercase').set(lowerCase);
-
-});
 
 function degreesToRadians(degrees) {
   return degrees * Math.PI / 180;
