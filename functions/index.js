@@ -44,6 +44,19 @@ exports.getUserRecords = functions.https.onRequest((req, res) => {
 })
 
 
+exports.deleteUser = functions.auth.user().onDelete( (event) => {
+
+
+    const user = event.data
+    const uid = user.uid
+
+    var userRef = admin.database().ref('Users/'+uid)
+
+    return userRef.remove()
+
+
+})
+
 
 
 
